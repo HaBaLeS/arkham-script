@@ -71,11 +71,12 @@ on round_end {
 }
 
 on pre_play_card {
-    when this.type == asset {
+    /*when this.type == asset {
+
         deny
     }
     when this.type == event {
         deny
     }
-
+*/
 }
