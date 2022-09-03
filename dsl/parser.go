@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -28,9 +29,7 @@ func newParser(tokens <-chan item) *parser {
 func (p *parser) Parse() (ast Ast, err error) {
 	// Parsing uses panics to bubble up errors
 	defer p.recover(&err)
-
 	ast = p.program()
-
 	return
 }
 
@@ -112,12 +111,14 @@ func (p *parser) program() *ProgramNode {
 		switch peek.Typ {
 		case ItemEOF:
 			return prog
-		case ItemCCode:
-			s := p.ccodeStatement()
-			prog.Statements = append(prog.Statements, s)
-		case ItemRule:
-			s := p.ruleStatement()
-			prog.Statements = append(prog.Statements, s)
+
+		//case ItemRule:
+		//	s := p.ruleStatement()
+		//	prog.Statements = append(prog.Statements, s)
+
+		case ItemCloseBracket:
+			return prog
+
 		default:
 			s := p.blockStatement()
 			if s != nil {
@@ -130,13 +131,221 @@ func (p *parser) program() *ProgramNode {
 
 func (p *parser) ccodeStatement() Node {
 	r := p.expect(ItemCCode)
-	n := p.expect(ItemWord)
+	n := p.expect(ItemString)
 	return &CCode{
 		r.Pos,
 		n.Val,
 	}
 }
 
+func (p *parser) onStatement() Node {
+	r := p.expect(ItemOn)
+	n := p.expect(ItemWord)
+	p.expect(ItemOpenBracket)
+	prog := p.program()
+	p.expect(ItemCloseBracket)
+	return &On{
+		r.Pos,
+		n.Val,
+		prog,
+	}
+}
+
+func (p *parser) testStatement() Node {
+	r := p.expect(ItemTest)
+	w := p.expect(ItemWord)
+	p.expect(ItemAgainst)
+	a := p.expect(ItemNumber)
+	am, _ := strconv.Atoi(a.Val)
+
+	p.expect(ItemOpenBracket)
+	s := p.successStatement()
+	f := p.failureStatement()
+	p.expect(ItemCloseBracket)
+
+	return &Test{
+		r.Pos,
+		w.Val,
+		am,
+		s,
+		f,
+	}
+}
+
+func (p *parser) blockStatement() Node {
+	n := p.peek()
+	switch n.Typ {
+	case ItemError:
+		panic(p.peek().Val)
+		break
+	case ItemComment:
+		p.next() //consume comment
+		fmt.Println("Ignoring: Comment")
+		return nil
+	case ItemCCode:
+		return p.ccodeStatement()
+	case ItemOn:
+		return p.onStatement()
+	case ItemEmit:
+		return p.emitStatement()
+	case ItemPrint:
+		return p.printStatement()
+	case ItemTest:
+		return p.testStatement()
+	case ItemDamage:
+		return p.damageStatement()
+	case ItemIntercept:
+		return p.InterceptStatement()
+	/*case ItemRandomAction:
+		return p.randomActionStatement()
+	case ItemOrderedAction:
+		return p.orderedActionStatement()
+	case ItemActivate:
+		return p.activateStatement()
+	case ItemDeactivate:
+		return p.deactivateStatement()
+	case ItemDoAction:
+		return p.doActionStatement()
+	*/
+
+	default:
+		p.errorf("Don't know what to do with token: \"%s\", (line: %d)", n.Val, n.Line)
+	}
+	return nil
+}
+
+func (p *parser) getPropertie() *PropertieNode {
+	var a item
+	v := p.next()
+	if v.Typ == ItemNumber {
+		return &PropertieNode{
+			Position: v.Pos,
+			Object:   v.Val,
+		}
+	} else if v.Typ == ItemWord {
+		n := p.peek()
+		if n.Typ == ItemDot {
+			p.next()
+			a = p.expect(ItemWord)
+		}
+		return &PropertieNode{
+			v.Pos,
+			v.Val,
+			a.Val,
+		}
+	}
+	return nil
+
+}
+
+func (p *parser) getOperator() string {
+	switch n := p.peek(); {
+	case n.Typ == ItemEqual:
+		p.next()
+		return n.Val
+	case n.Typ == ItemGreater:
+		p.next()
+		return n.Val
+	case n.Typ == ItemLesser:
+		p.next()
+		return n.Val
+	case n.Typ == ItemNotEqual:
+		p.next()
+		return n.Val
+	default:
+		p.errorf("Excpected: <, >, =, ! got %v", n.Val)
+	}
+	return ""
+}
+
+func (p *parser) getWordList() *WordListNode {
+	words := make([]string, 0, 10)
+	p.expect(ItemOpenSquareBracket)
+	for {
+		switch t := p.next(); {
+		case t.Typ == ItemCloseSquareBracket:
+			return &WordListNode{
+				t.Pos,
+				words,
+			}
+		case t.Typ == ItemComma:
+			//Ignore
+		case t.Typ == ItemWord:
+			words = append(words, t.Val)
+		default:
+			p.error(fmt.Errorf("Illegal expression in wordlist: %s of type: %v", t.Val, t.Typ))
+		}
+	}
+}
+
+func (p *parser) emitStatement() Node {
+	r := p.expect(ItemEmit)
+	e := p.expect(ItemWord)
+	p.expect(ItemColon)
+	a := p.getWordList()
+
+	return &Emit{
+		r.Pos,
+		e.Val,
+		a.Words,
+	}
+}
+
+func (p *parser) printStatement() Node {
+	r := p.expect(ItemPrint)
+	s := p.expect(ItemString)
+	return &Print{
+		r.Pos,
+		s.Val,
+	}
+}
+
+func (p *parser) successStatement() *ProgramNode {
+	p.expect(ItemSuccess)
+	p.expect(ItemOpenBracket)
+	prog := p.program()
+	p.expect(ItemCloseBracket)
+	return prog
+}
+
+func (p *parser) failureStatement() *ProgramNode {
+	p.expect(ItemFailure)
+	p.expect(ItemOpenBracket)
+	prog := p.program()
+	p.expect(ItemCloseBracket)
+	return prog
+}
+
+func (p *parser) damageStatement() Node {
+	r := p.expect(ItemDamage)
+	w := p.expect(ItemWord)
+	p.expect(ItemColon)
+	a := p.expect(ItemNumber)
+	am, _ := strconv.Atoi(a.Val)
+
+	t := p.expect(ItemWord)
+	return &Damage{
+		r.Pos,
+		w.Val,
+		am,
+		t.Val,
+	}
+}
+
+func (p *parser) InterceptStatement() Node {
+	r := p.expect(ItemIntercept)
+	w := p.expect(ItemWord)
+	p.expect(ItemOpenBracket)
+	prog := p.program()
+	p.expect(ItemCloseBracket)
+	return &Intercept{
+		r.Pos,
+		w.Val,
+		prog,
+	}
+}
+
+/*
 func (p *parser) ruleStatement() Node {
 	r := p.expect(ItemRule)
 	p.expect(ItemOpenBracket)
@@ -152,6 +361,7 @@ func (p *parser) ruleStatement() Node {
 		n.Val,
 	}
 }
+
 
 func (p *parser) whenStatement() *WhenStatement {
 	n := p.expect(ItemWhen)
@@ -173,35 +383,9 @@ func (p *parser) thenStatement() *ThenStatement {
 		n.Pos,
 		b,
 	}
-}
+}*/
 
-func (p *parser) blockStatement() Node {
-	n := p.peek()
-	switch n.Typ {
-	case ItemError:
-		panic(p.peek().Val)
-		break
-	case ItemComment:
-		p.next() //consume comment
-		fmt.Println("Ignoring: Comment")
-		return nil
-	case ItemRandomAction:
-		return p.randomActionStatement()
-	case ItemOrderedAction:
-		return p.orderedActionStatement()
-	case ItemActivate:
-		return p.activateStatement()
-	case ItemDeactivate:
-		return p.deactivateStatement()
-	case ItemDoAction:
-		return p.doActionStatement()
-
-	default:
-		p.errorf("Don't know what to do (line: %d)", n.Line)
-	}
-	return nil
-}
-
+/*
 func (p *parser) activateStatement() *ActivateStatementNode {
 	a := p.expect(ItemActivate)
 	w := p.expect(ItemWord)
@@ -265,67 +449,4 @@ func (p *parser) orderedActionStatement() *OrderedActionStatementNode {
 		wl,
 		n.Val,
 	}
-}
-
-func (p *parser) getPropertie() *PropertieNode {
-	var a item
-	v := p.next()
-	if v.Typ == ItemNumber {
-		return &PropertieNode{
-			Position: v.Pos,
-			Object:   v.Val,
-		}
-	} else if v.Typ == ItemWord {
-		n := p.peek()
-		if n.Typ == ItemDot {
-			p.next()
-			a = p.expect(ItemWord)
-		}
-		return &PropertieNode{
-			v.Pos,
-			v.Val,
-			a.Val,
-		}
-	}
-	return nil
-
-}
-
-func (p *parser) getOperator() string {
-	switch n := p.peek(); {
-	case n.Typ == ItemEqual:
-		p.next()
-		return n.Val
-	case n.Typ == ItemGreater:
-		p.next()
-		return n.Val
-	case n.Typ == ItemLesser:
-		p.next()
-		return n.Val
-	case n.Typ == ItemNotEqual:
-		p.next()
-		return n.Val
-	default:
-		p.errorf("Excpected: <, >, =, ! got %v", n.Val)
-	}
-	return ""
-}
-
-func (p *parser) getWordList() *WordListNode {
-	words := make([]string, 0, 10)
-	for {
-		switch t := p.next(); {
-		case t.Typ == ItemCloseSquareBracket:
-			return &WordListNode{
-				t.Pos,
-				words,
-			}
-		case t.Typ == ItemComma:
-			//Ignore
-		case t.Typ == ItemWord:
-			words = append(words, t.Val)
-		default:
-			p.error(fmt.Errorf("Illegal expression in wordlist: %s of type: %v", t.Val, t.Typ))
-		}
-	}
-}
+}*/

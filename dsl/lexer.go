@@ -25,30 +25,50 @@ const (
 	ItemNotEqual
 	ItemGreater
 	ItemLesser
-	ItemRule
-	ItemActivate
-	ItemDeactivate
-	ItemSet
-	ItemWhen
-	ItemThen
+	ItemColon
+	ItemDoubleQuote
+	//ItemRule
+	//ItemActivate
+	//ItemDeactivate
+	//ItemSet
+	//ItemWhen
+	//ItemThen
 	ItemComment
 	ItemOpenSquareBracket
 	ItemCloseSquareBracket
 	ItemComma
 	ItemOpenBracket
 	ItemCloseBracket
-	ItemRandomAction
-	ItemOrderedAction
-	ItemDoAction
-	ItemAs
+	//ItemRandomAction
+	//ItemOrderedAction
+	//ItemDoAction
+	//ItemAs
 
 	ItemCCode
+	ItemOn
+	ItemEmit
+	ItemPrint
+	ItemString
+	ItemTest
+	ItemAgainst
+	ItemSuccess
+	ItemFailure
+	ItemDamage
+	ItemIntercept
 )
 
 var keywords = map[string]itemType{
-	"ccode": ItemCCode,
-
-	"rule":          ItemRule,
+	"ccode":     ItemCCode,
+	"on":        ItemOn,
+	"emit":      ItemEmit,
+	"print":     ItemPrint,
+	"test":      ItemTest,
+	"against":   ItemAgainst,
+	"success":   ItemSuccess,
+	"failure":   ItemFailure,
+	"damage":    ItemDamage,
+	"intercept": ItemIntercept,
+	/*"rule":          ItemRule,
 	"activate":      ItemActivate,
 	"deactivate":    ItemDeactivate,
 	"set":           ItemSet,
@@ -57,7 +77,7 @@ var keywords = map[string]itemType{
 	"RandomAction":  ItemRandomAction,
 	"OrderedAction": ItemOrderedAction,
 	"Do":            ItemDoAction,
-	"as":            ItemAs,
+	"as":            ItemAs,*/
 }
 
 const eof = -1
@@ -183,6 +203,10 @@ func lexItem(l *lexer) stateFn {
 			l.emit(ItemCloseBracket)
 		case r == ',':
 			l.emit(ItemComma)
+		case r == ':':
+			l.emit(ItemColon)
+		case r == '"':
+			return lexStringBegin
 		case r == '/':
 			return lexCommentBegin
 		case unicode.IsDigit(r):
@@ -223,6 +247,20 @@ func lexText(l *lexer) stateFn {
 
 			l.emit(ItemWord)
 			return lexItem
+		}
+	}
+}
+
+func lexStringBegin(l *lexer) stateFn {
+	for {
+		switch r := l.next(); {
+
+		case r == '"':
+			l.emit(ItemString)
+			return lexItem
+
+		default:
+			//swallow
 		}
 	}
 }

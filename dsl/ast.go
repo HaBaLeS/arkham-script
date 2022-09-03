@@ -20,6 +20,63 @@ type ProgramNode struct {
 	Statements []Node
 }
 
+type PropertieNode struct {
+	Position  int
+	Object    string
+	Attribute string
+}
+
+type WordListNode struct {
+	Position int
+	Words    []string
+}
+
+//--- Arkham GO ---//
+
+type CCode struct {
+	Position int
+	CCode    string
+}
+
+type On struct {
+	Position int
+	Event    string
+	Programm *ProgramNode
+}
+
+type Emit struct {
+	Position  int
+	Event     string
+	Arguments []string
+}
+
+type Print struct {
+	Position int
+	Text     string
+}
+
+type Test struct {
+	Position int
+	What     string
+	Level    int
+	Success  *ProgramNode
+	Failure  *ProgramNode
+}
+
+type Damage struct {
+	Position int
+	Who      string
+	Amount   int
+	Where    string
+}
+
+type Intercept struct {
+	Position int
+	When     string
+	Program  *ProgramNode
+}
+
+/**
 type ActivateStatementNode struct {
 	Position          int
 	NamedRuleOrAction string
@@ -48,11 +105,6 @@ type OrderedActionStatementNode struct {
 	ActionName string
 }
 
-type WordListNode struct {
-	Position int
-	Actions  []string
-}
-
 type RuleStatement struct {
 	Position      int
 	WhenStatement *WhenStatement
@@ -72,13 +124,7 @@ type ThenStatement struct {
 	Statement Node
 }
 
-type PropertieNode struct {
-	Position  int
-	Object    string
-	Attribute string
-}
 
-type CCode struct {
-	Position int
-	CCode    string
-}
+
+
+*/

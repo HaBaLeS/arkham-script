@@ -1,0 +1,81 @@
+ccode "C0815"
+
+print "debug is king"
+
+on card_reveal {
+    emit card_to_threat_area: []
+}
+
+on card_reveal {
+    test agility against 4 {
+        success {
+            print "i have succeeded"
+        }
+        failure {
+            print "i have failed miserably"
+            damage player: 3 horror
+        }
+    }
+
+     test my_ass against 66 {
+            success {
+                print "i have succeeded"
+            }
+            failure {
+                print "i have failed miserably"
+                damage player: 2 physical
+            }
+        }
+
+}
+
+on card_played {
+    emit win_all_card: [one, two, tree, threedots, enn]
+}
+
+
+on card_played {
+    emit win_all_card: [one, two, tree, threedots, enn]
+}
+
+ccode "01164"
+
+on card_reveal {
+
+    //threat_area player
+
+    intercept move {
+        print "Aktion kostet 2 statt 1"
+        //action_cost 2
+    }
+
+    intercept fight {
+        print "Aktion kostet 2 statt 1"
+        //action_cost 2
+    }
+
+    intercept evade {
+        print "Aktion kostet 2 statt 1"
+        //action_cost 2
+    }
+}
+
+on round_end {
+    test brain against 3 {
+        success {
+            print "Remove the card"
+            //remove_card this
+        }
+        failure {}
+    }
+}
+
+on pre_play_card {
+    when this.type == asset {
+        deny
+    }
+    when this.type == event {
+        deny
+    }
+
+}
