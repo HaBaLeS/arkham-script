@@ -1,0 +1,88 @@
+ccode: 01105#+
+on_revealFunc:
+  scriptFunc:
+    name: choiceFunc
+    paramMap:
+      key: value
+
+on_enter_location:
+  - damage:
+      target: trigger
+      physical: 1
+      horror: 0
+
+on_reveal:
+  - play_enemy_form_discard:
+    enemy_type: ghul
+    play_to: leader
+
+  - remove_enemys:
+      - from: locationcode
+      - which: enemycode
+
+  - move_investigator:
+      - who: all
+      - to: hallway
+
+  - remove_location:
+      - ccode: 1234
+      - name: study
+
+  - place_enemy:
+      - ccode: 1244
+      - name: priest
+      - location: stury
+      - on_die:
+          scriptFunc:
+            name: choiceFunc
+            paramMap:
+              key: value
+
+  - place_card:
+      - ccode: 1244
+      - name: priest
+      - location: stury
+
+  - place_location:
+      - ccode: 0815
+      - name: hallway
+
+  - place_location:
+      - ccode: 0815
+      - name: cellar
+
+  - place_location:
+      - ccode: 0815
+      - name: attic
+
+  - force_test:
+      - against: agility
+      - difficulty
+      - on_success:
+      - on_fail:
+          - damage:
+              target: trigger
+              physical: 1
+              horror: 0
+
+  - play_doom_token:
+      - amount: 1
+      - emit_event: check_agenda_advancement
+
+on_round_end:
+  - move_enemys:
+      to: parlor
+
+  - scriptFunc:
+      name: playDoomTokenForEachGoul
+      paramMap:
+        key: value
+
+  - force_test:
+      - against: mind
+      - difficulty
+      - on_success:
+          - remove_card:
+              - ccode: 0815
+              - name: hallway
+      - on_fail:

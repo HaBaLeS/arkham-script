@@ -1,0 +1,24 @@
+ccode: 0815
+events:
+  - event:
+    trigger: on_reveal
+    type: gain_ressources
+    actions:
+      - action:
+        type: damage
+        horror: 2
+        physical: 0
+      - action:
+        type: damage
+        horror: 2
+        physical: 0
+      - action:
+        type: damage
+        horror: 2
+        physical: 0
+
+  - event:
+    trigger: t3
+    type: ty3
+    actions:
+      - action:
