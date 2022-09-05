@@ -2,13 +2,12 @@ package eval
 
 import (
 	"arkham-script/dsl"
-	"arkham-script/engine"
 	"log"
 	"reflect"
 )
 
 type EvaluationContext struct {
-	engine engine.Engine
+	engine Engine
 	ccode  string
 }
 
@@ -19,7 +18,7 @@ func New() EvaluationContext {
 func (e *EvaluationContext) SetData(name string, dp interface{}) {
 }
 
-func (e *EvaluationContext) EvalRuledefinition(ast dsl.Ast) {
+func (e *EvaluationContext) EvalCardScript(ast dsl.Ast) {
 	//log.Printf("process: %s\n", reflect.TypeOf(ast))
 	switch n := ast.(type) {
 
@@ -39,19 +38,19 @@ func (e *EvaluationContext) EvalRuledefinition(ast dsl.Ast) {
 	//e.defineRule(n)
 
 	case *dsl.CCode:
-		e.ExecRegisterCardCode(n)
+		e.execRegisterCardCode(n)
 	case *dsl.On:
-		e.ExecOn(n)
+		e.execOn(n)
 	case *dsl.Emit:
-		e.ExecEmit(n)
+		e.execEmit(n)
 	case *dsl.Print:
-		e.ExecPrint(n)
+		e.execPrint(n)
 	case *dsl.Test:
-		e.ExecTest(n)
+		e.execTest(n)
 	case *dsl.Damage:
-		e.ExecDamage(n)
+		e.execDamage(n)
 	case *dsl.Intercept:
-		e.ExecIntercept(n)
+		e.execIntercept(n)
 	default:
 		log.Printf("Unexpexted: %s\n", reflect.TypeOf(n))
 		panic("Ouch")
@@ -59,29 +58,29 @@ func (e *EvaluationContext) EvalRuledefinition(ast dsl.Ast) {
 }
 func (e *EvaluationContext) evalNodeList(nodes []dsl.Node) {
 	for _, s := range nodes {
-		e.EvalRuledefinition(s)
+		e.EvalCardScript(s)
 	}
 }
 
-func (e *EvaluationContext) ExecRegisterCardCode(n *dsl.CCode) {
+func (e *EvaluationContext) execRegisterCardCode(n *dsl.CCode) {
 	e.ccode = n.CCode
 }
 
-func (e *EvaluationContext) ExecOn(n *dsl.On) {
+func (e *EvaluationContext) execOn(n *dsl.On) {
 	e.engine.RegisterEventListener(n.Event, func() {
 		e.evalNodeList(n.Programm.Statements)
 	})
 }
 
-func (e *EvaluationContext) ExecEmit(n *dsl.Emit) {
+func (e *EvaluationContext) execEmit(n *dsl.Emit) {
 	log.Printf("Emit event with name: %s with arg: %v", n.Event, n.Arguments)
 }
 
-func (e *EvaluationContext) ExecPrint(n *dsl.Print) {
+func (e *EvaluationContext) execPrint(n *dsl.Print) {
 	log.Printf("PRINT: %s", n.Text)
 }
 
-func (e *EvaluationContext) ExecTest(n *dsl.Test) {
+func (e *EvaluationContext) execTest(n *dsl.Test) {
 	log.Printf("Player has do do a Test: %s for %d", n.What, n.Level)
 	log.Printf("If he succeeds:")
 	e.evalNodeList(n.Success.Statements)
@@ -90,11 +89,11 @@ func (e *EvaluationContext) ExecTest(n *dsl.Test) {
 
 }
 
-func (e *EvaluationContext) ExecDamage(n *dsl.Damage) {
+func (e *EvaluationContext) execDamage(n *dsl.Damage) {
 	log.Printf("%s takes %d Damage to %s", n.Who, n.Amount, n.Where)
 }
 
-func (e *EvaluationContext) ExecIntercept(n *dsl.Intercept) {
+func (e *EvaluationContext) execIntercept(n *dsl.Intercept) {
 	log.Printf("Register Intercept on %s event", n.When)
 	e.evalNodeList(n.Program.Statements)
 }
