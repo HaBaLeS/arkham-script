@@ -65,15 +65,28 @@ type Test struct {
 
 type Damage struct {
 	Position int
-	Who      string
-	Amount   int
+	Who      Node
+	Amount   Node
 	Where    string
+	Key      string
 }
 
 type Intercept struct {
 	Position int
 	When     string
 	Program  *ProgramNode
+}
+
+type Value struct {
+	Position int
+	Map      string
+	Key      string
+}
+
+type ValueNumber struct {
+	Position int
+	Map      string
+	Key      string
 }
 
 /**

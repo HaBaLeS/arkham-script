@@ -317,18 +317,19 @@ func (p *parser) failureStatement() *ProgramNode {
 }
 
 func (p *parser) damageStatement() Node {
+	var key item
 	r := p.expect(ItemDamage)
-	w := p.expect(ItemWord)
+	w := p.expectItemValue()
 	p.expect(ItemColon)
-	a := p.expect(ItemNumber)
-	am, _ := strconv.Atoi(a.Val)
+	a := p.expectItemPropertie()
 
 	t := p.expect(ItemWord)
 	return &Damage{
 		r.Pos,
-		w.Val,
-		am,
+		w,
+		a,
 		t.Val,
+		key.Val,
 	}
 }
 
@@ -342,6 +343,42 @@ func (p *parser) InterceptStatement() Node {
 		r.Pos,
 		w.Val,
 		prog,
+	}
+}
+
+func (p *parser) expectItemValue() Node {
+	var key item
+	obj := p.expect(ItemWord)
+	if p.peek().Typ == ItemOpenSquareBracket {
+		p.next()
+		key = p.expect(ItemWord)
+		p.expect(ItemCloseSquareBracket)
+	}
+	return &Value{
+		Position: obj.Pos,
+		Map:      obj.Val,
+		Key:      key.Val,
+	}
+}
+
+func (p *parser) expectItemPropertie() Node {
+	var key item
+	var obj item
+
+	if p.peek().Typ == ItemNumber {
+		obj = p.expect(ItemNumber)
+	} else {
+		obj = p.expect(ItemWord)
+		if p.peek().Typ == ItemDot {
+			p.next()
+			key = p.expect(ItemWord)
+		}
+	}
+
+	return &Value{
+		Position: obj.Pos,
+		Map:      obj.Val,
+		Key:      key.Val,
 	}
 }
 

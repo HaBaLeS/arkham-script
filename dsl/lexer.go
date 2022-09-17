@@ -26,7 +26,6 @@ const (
 	ItemGreater
 	ItemLesser
 	ItemColon
-	ItemDoubleQuote
 	//ItemRule
 	//ItemActivate
 	//ItemDeactivate
@@ -55,6 +54,7 @@ const (
 	ItemFailure
 	ItemDamage
 	ItemIntercept
+	ItemValue //either Word or Property
 )
 
 var keywords = map[string]itemType{

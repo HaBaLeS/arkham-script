@@ -1,0 +1,10 @@
+ccode "01163"
+
+on card_reveal {
+    test willpower against 3 {
+           success{}
+           failure{
+                damage some[player]: t_result.diff horror
+           }
+    }
+}

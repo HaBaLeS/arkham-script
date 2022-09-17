@@ -7,12 +7,14 @@ import (
 )
 
 type EvaluationContext struct {
-	engine Engine
+	engine *Engine
 	ccode  string
 }
 
-func New() EvaluationContext {
-	return EvaluationContext{}
+func New(engine *Engine) *EvaluationContext {
+	return &EvaluationContext{
+		engine: engine,
+	}
 }
 
 func (e *EvaluationContext) SetData(name string, dp interface{}) {

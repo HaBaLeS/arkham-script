@@ -1,0 +1,10 @@
+ccode "01162"
+
+on card_reveal {
+    test agility against 3 {
+           success{}
+           failure{
+                damage context[player]: result.diff health
+           }
+    }
+}

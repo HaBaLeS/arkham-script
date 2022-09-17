@@ -4,11 +4,14 @@ import (
 	"arkham-script/dsl"
 	"log"
 	"os"
+	"strings"
 )
 
 type Engine struct {
-	evalCtx *EvaluationContext
-	scripts map[string]*cardEvents
+	evalCtx  *EvaluationContext
+	scripts  map[string]*cardEvents
+	listener map[string][]ListenerCallback
+	evq      chan string
 }
 
 type cardEvents struct {
@@ -19,28 +22,35 @@ type cardEvents struct {
 }
 
 func NewEngine() *Engine {
-	return &Engine{
-		evalCtx: &EvaluationContext{},
-		scripts: make(map[string]*cardEvents),
+	e := &Engine{
+		scripts:  make(map[string]*cardEvents),
+		evq:      make(chan string, 100),
+		listener: make(map[string][]ListenerCallback, 0),
 	}
+	e.evalCtx = New(e)
+
+	return e
 }
 
 type ListenerCallback func()
 
-func (e Engine) RegisterEventListener(event string, callback ListenerCallback) {
+func (e *Engine) RegisterEventListener(event string, callback ListenerCallback) {
 	log.Printf("Listener for %s registered", event)
-	switch event {
-		
+
+	lq := e.listener[event]
+	if lq == nil {
+		lq = make([]ListenerCallback, 0)
 	}
+	e.listener[event] = append(lq, callback)
 }
 
 /*
  * - load card script
  * - execute cardScript
  */
-func (e Engine) InitCard(ccode string) {
+func (e *Engine) InitCard(file string) {
 	//run card script to register all on ...
-	script, err := os.ReadFile("scripts/" + ccode)
+	script, err := os.ReadFile("scripts/" + file)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,8 +64,8 @@ func (e Engine) InitCard(ccode string) {
 		log.Fatalln("Nooooo its nulllll")
 	}
 
-	e.scripts[ccode] = &cardEvents{
-		ccode: ccode,
+	e.scripts[file] = &cardEvents{
+		ccode: file,
 	}
 	e.evalCtx.EvalCardScript(ast)
 
@@ -65,11 +75,25 @@ func (e Engine) InitCard(ccode string) {
  * can be executed any time to ched if a card can be played.
  * MUST BE WITHOUT SIDE EFFECT
  */
-func (e Engine) CanPlayCard(ccode string) bool {
+func (e *Engine) CanPlayCard(ccode string) bool {
 	var ast any //getFromAstCache
 	e.evalCtx.EvalCardScript(ast)
 
 	return false
+}
+
+func (e *Engine) InitCards() {
+	dirs, _ := os.ReadDir("scripts/")
+	for _, d := range dirs {
+		if strings.HasSuffix(d.Name(), ".arkham") {
+			e.InitCard(d.Name())
+		}
+
+	}
+}
+
+func (e *Engine) IncomingEvent(ev string) {
+	e.evq <- ev
 }
 
 /**

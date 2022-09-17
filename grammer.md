@@ -67,6 +67,7 @@
     printStatement      = "print" string .
     damageStatement     = "damage" word ":" number word .
     interceptStatement  = "intercept" word "{" Program "}" .
+    mapStatement        = word"["word"]" .
 ----
 Example
 
