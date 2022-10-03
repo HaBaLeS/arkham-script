@@ -36,12 +36,10 @@ type ListenerCallback func()
 
 func (e *Engine) RegisterEventListener(event string, callback ListenerCallback) {
 	log.Printf("Listener for %s registered", event)
+	switch event {
 
-	lq := e.listener[event]
-	if lq == nil {
-		lq = make([]ListenerCallback, 0)
 	}
-	e.listener[event] = append(lq, callback)
+	//e.listener[event] = append(lq, callback)
 }
 
 /*
